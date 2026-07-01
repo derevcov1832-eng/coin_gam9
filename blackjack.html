@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🃏 Блэкджек</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a1f1a, #1a3a2a, #0a1f1a);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .back-btn {
+            display: inline-block;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            font-size: 16px;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 30px;
+            transition: 0.3s;
+        }
+        .back-btn:active { transform: scale(0.95); }
+        h2 { font-size: 28px; margin-bottom: 10px; }
+        .balance {
+            font-size: 24px;
+            color: #f7d44a;
+            margin-bottom: 20px;
+        }
+
+        /* ===== КАРТЫ ===== */
+        .hand {
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 10px 0;
+            min-height: 100px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+        }
+        .hand .label { font-size: 12px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; }
+        .hand .cards {
+            font-size: 32px;
+            margin: 8px 0;
+            min-height: 50px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+        .hand .cards .card {
+            background: white;
+            color: #1a1a2e;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            animation: dealCard 0.4s ease-out;
+            display: inline-block;
+            min-width: 50px;
+        }
+        .hand .cards .card.red { color: #e74c3c; }
+        .hand .cards .card.black { color: #1a1a2e; }
+
+        @keyframes dealCard {
+            0% { transform: translateY(-50px) rotate(10deg); opacity: 0; }
+            100% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        }
+
+        .hand .points {
+            font-size: 22px;
+            color: #f7d44a;
+            font-weight: bold;
+        }
+        .hand .points.win { color: #2ecc71; }
+        .hand .points.lose { color: #e74c3c; }
+
+        .result {
+            font-size: 24px;
+            margin: 15px 0;
+            min-height: 40px;
+            font-weight: bold;
+        }
+        .result.win { color: #2ecc71; }
+        .result.lose { color: #e74c3c; }
+        .result.draw { color: #f7d44a; }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 14px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:active { transform: scale(0.95); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-green { background: #2ecc71; color: white; box-shadow: 0 4px 20px rgba(46,204,113,0.3); }
+        .btn-gold { background: #f7d44a; color: #1a1a2e; box-shadow: 0 4px 20px rgba(247,212,74,0.3); }
+        .btn-red { background: #e74c3c; color: white; box-shadow: 0 4px 20px rgba(231,76,60,0.3); }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            display: none;
+            z-index: 999;
+            max-width: 90%;
+        }
+        .toast.show { display: block; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown {
+            from { top: -100px; opacity: 0; }
+            to { top: 20px; opacity: 1; }
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-btn">← Назад</a>
+    
+    <h2>🃏 Блэкджек</h2>
+    <div class="balance" id="balanceDisplay">💰 1000</div>
+    
+    <div class="hand" id="playerHand">
+        <div class="label">👤 Твои карты</div>
+        <div class="cards" id="playerCards"></div>
+        <div class="points" id="playerPoints">0 очков</div>
+    </div>
+    
+    <div class="hand" id="dealerHand">
+        <div class="label">🤖 Карты дилера</div>
+        <div class="cards" id="dealerCards"></div>
+        <div class="points" id="dealerPoints">0 очков</div>
+    </div>
+    
+    <div class="result" id="bjResult">Нажми «Новая игра»</div>
+    
+    <div class="buttons">
+        <button class="btn-green" onclick="startBlackjack()" id="newBtn">🆕 Новая</button>
+        <button class="btn-gold" onclick="hitCard()" id="hitBtn" disabled>➕ Взять</button>
+        <button class="btn-red" onclick="standCard()" id="standBtn" disabled>✋ Стоп</button>
+    </div>
+    
+    <div style="margin-top:10px; font-size:12px; opacity:0.5;">Ставка: 50 монет</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    let balance = parseInt(localStorage.getItem('casinoBalance')) || 1000;
+    updateDisplay();
+    
+    function updateDisplay() {
+        document.getElementById('balanceDisplay').textContent = '💰 ' + balance;
+        localStorage.setItem('casinoBalance', balance);
+    }
+    
+    function showToast(msg, isWin) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.style.borderColor = isWin ? 'rgba(46,204,113,0.5)' : 'rgba(231,76,60,0.5)';
+        t.classList.add('show');
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
+    }
+    
+    // ===== БЛЭКДЖЕК =====
+    let deck = [], playerCards = [], dealerCards = [];
+    let bjBet = 50, bjActive = false;
+    
+    function createDeck() {
+        const suits = ['♠','♥','♦','♣'];
+        const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+        let d = [];
+        for (let s of suits) for (let v of values) d.push(v+s);
+        return d;
+    }
+    
+    function shuffle(d) {
+        for (let i = d.length-1; i>0; i--) {
+            let j = Math.floor(Math.random()*(i+1));
+            [d[i], d[j]] = [d[j], d[i]];
+        }
+        return d;
+    }
+    
+    function cardValue(c) {
+        let v = c.slice(0, -1);
+        if (v === 'A') return 11;
+        if (['J','Q','K'].includes(v)) return 10;
+        return parseInt(v);
+    }
+    
+    function countPoints(hand) {
+        let total = hand.reduce((s, c) => s + cardValue(c), 0);
+        let aces = hand.filter(c => c[0] === 'A').length;
+        while (total > 21 && aces > 0) { total -= 10; aces--; }
+        return total;
+    }
+    
+    function getCardColor(card) {
+        const suit = card.slice(-1);
+        return (suit === '♥' || suit === '♦') ? 'red' : 'black';
+    }
+    
+    function renderBJ() {
+        const playerHTML = playerCards.map(c => 
+            `<span class="card ${getCardColor(c)}">${c}</span>`
+        ).join('');
+        const dealerHTML = dealerCards.map(c => 
+            `<span class="card ${getCardColor(c)}">${c}</span>`
+        ).join('');
+        
+        document.getElementById('playerCards').innerHTML = playerHTML || '—';
+        document.getElementById('dealerCards').innerHTML = dealerHTML || '—';
+        
+        const pPoints = playerCards.length ? countPoints(playerCards) : 0;
+        const dPoints = dealerCards.length ? countPoints(dealerCards) : 0;
+        
+        document.getElementById('playerPoints').textContent = pPoints + ' очков';
+        document.getElementById('dealerPoints').textContent = dPoints + ' очков';
+    }
+    
+    function startBlackjack() {
+        if (balance < bjBet) { showToast('❌ Недостаточно монет!', false); return; }
+        bjActive = true;
+        document.getElementById('hitBtn').disabled = false;
+        document.getElementById('standBtn').disabled = false;
+        document.getElementById('newBtn').disabled = true;
+        document.getElementById('bjResult').className = 'result';
+        
+        balance -= bjBet;
+        updateDisplay();
+        deck = shuffle(createDeck());
+        playerCards = [deck.pop(), deck.pop()];
+        dealerCards = [deck.pop(), deck.pop()];
+        renderBJ();
+        document.getElementById('bjResult').textContent = '';
+        
+        if (countPoints(playerCards) === 21) {
+            setTimeout(() => {
+                const win = Math.floor(bjBet * 1.5);
+                balance += win;
+                updateDisplay();
+                document.getElementById('bjResult').className = 'result win';
+                document.getElementById('bjResult').textContent = '🎉 Блэкджек! +' + win + ' монет';
+                bjActive = false;
+                document.getElementById('hitBtn').disabled = true;
+                document.getElementById('standBtn').disabled = true;
+                document.getElementById('newBtn').disabled = false;
+            }, 500);
+        }
+    }
+    
+    function hitCard() {
+        if (!bjActive) return;
+        playerCards.push(deck.pop());
+        renderBJ();
+        const points = countPoints(playerCards);
+        if (points > 21) {
+            document.getElementById('bjResult').className = 'result lose';
+            document.getElementById('bjResult').textContent = '💥 Перебор! Проиграл ' + bjBet + ' монет';
+            bjActive = false;
+            document.getElementById('hitBtn').disabled = true;
+            document.getElementById('standBtn').disabled = true;
+            document.getElementById('newBtn').disabled = false;
+        }
+    }
+    
+    function standCard() {
+        if (!bjActive) return;
+        while (countPoints(dealerCards) < 17) dealerCards.push(deck.pop());
+        const p = countPoints(playerCards), d = countPoints(dealerCards);
+        renderBJ();
+        
+        document.getElementById('hitBtn').disabled = true;
+        document.getElementById('standBtn').disabled = true;
+        document.getElementById('newBtn').disabled = false;
+        bjActive = false;
+        
+        if (d > 21 || p > d) {
+            const win = bjBet * 2;
+            balance += win;
+            updateDisplay();
+            document.getElementById('bjResult').className = 'result win';
+            document.getElementById('bjResult').textContent = '🎉 Выиграл ' + win + ' монет!';
+        } else if (p === d) {
+            balance += bjBet;
+            updateDisplay();
+            document.getElementById('bjResult').className = 'result draw';
+            document.getElementById('bjResult').textContent = '🤝 Ничья! Возврат ставки';
+        } else {
+            document.getElementById('bjResult').className = 'result lose';
+            document.getElementById('bjResult').textContent = '😢 Проиграл ' + bjBet + ' монет';
+        }
+    }
+</script>
+</body>
+</html>
