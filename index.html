@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎰 Моё Казино</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: white;
+            padding: 15px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        /* Баланс */
+        .balance-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .balance-card h2 {
+            font-size: 14px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .balance-card .amount {
+            font-size: 48px;
+            font-weight: bold;
+            color: #f7d44a;
+            text-shadow: 0 0 20px rgba(247,212,74,0.3);
+        }
+        
+        /* Игры */
+        .game {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .game h2 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .game .result {
+            font-size: 28px;
+            text-align: center;
+            padding: 15px;
+            min-height: 60px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            margin: 15px 0;
+            word-break: break-word;
+        }
+        .game .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .game button {
+            flex: 1;
+            min-width: 80px;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            background: #4a47a3;
+            box-shadow: 0 4px 15px rgba(74,71,163,0.4);
+        }
+        .game button:active {
+            transform: scale(0.95);
+        }
+        .game button.gold {
+            background: #f7d44a;
+            color: #1a1a2e;
+            box-shadow: 0 4px 15px rgba(247,212,74,0.4);
+        }
+        .game button.green {
+            background: #2ecc71;
+            box-shadow: 0 4px 15px rgba(46,204,113,0.4);
+        }
+        .game button.red {
+            background: #e74c3c;
+            box-shadow: 0 4px 15px rgba(231,76,60,0.4);
+        }
+        .game button.purple {
+            background: #9b59b6;
+            box-shadow: 0 4px 15px rgba(155,89,182,0.4);
+        }
+        .game button:disabled {
+            opacity: 0.4;
+            transform: none !important;
+        }
+        
+        /* Ставка для рулетки */
+        .bet-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 10px 0;
+            justify-content: center;
+        }
+        .bet-input input {
+            width: 100px;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            font-size: 18px;
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .bet-input input:focus {
+            outline: none;
+            border-color: #f7d44a;
+        }
+        .bet-input label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        /* Анимация монетки */
+        .coin-flip {
+            animation: flip 0.6s ease-in-out;
+        }
+        @keyframes flip {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(720deg); }
+        }
+        
+        /* Уведомления */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 18px;
+            z-index: 999;
+            display: none;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+        @keyframes slideDown {
+            from { top: -100px; opacity: 0; }
+            to { top: 20px; opacity: 1; }
+        }
+        
+        /* Подвал */
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.4;
+            margin-top: 30px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- Уведомления -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- Баланс -->
+    <div class="balance-card">
+        <h2>💰 Баланс</h2>
+        <div class="amount" id="balanceDisplay">1000</div>
+    </div>
+    
+    <!-- ===== МОНЕТКА ===== -->
+    <div class="game" id="coinGame">
+        <h2>🪙 Монетка</h2>
+        <div class="result coin-flip" id="coinResult">Нажми «Подбросить»</div>
+        <div class="buttons">
+            <button class="gold" onclick="tossCoin()">🔄 Подбросить</button>
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:14px; opacity:0.6;">
+            Ставка: 10 монет
+        </div>
+    </div>
+    
+    <!-- ===== 21 (БЛЭКДЖЕК) ===== -->
+    <div class="game" id="bjGame">
+        <h2>🃏 Блэкджек (21)</h2>
+        <div class="result" id="bjResult">Нажми «Новая игра»</div>
+        <div class="buttons">
+            <button class="green" onclick="startBlackjack()">🆕 Новая</button>
+            <button class="gold" onclick="hitCard()">➕ Взять</button>
+            <button class="red" onclick="standCard()">✋ Стоп</button>
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:14px; opacity:0.6;">
+            Ставка: 50 монет
+        </div>
+    </div>
+    
+    <!-- ===== РУЛЕТКА ===== -->
+    <div class="game" id="rouletteGame">
+        <h2>🎡 Рулетка</h2>
+        <div class="result" id="rouletteResult">Нажми «Крутить»</div>
+        
+        <div class="bet-input">
+            <label>Ставка:</label>
+            <input type="number" id="rouletteBet" value="50" min="10" step="10">
+        </div>
+        
+        <div class="buttons">
+            <button class="red" onclick="spinRoulette('red')">🔴 Красное</button>
+            <button class="gold" onclick="spinRoulette('black')">⚫ Чёрное</button>
+            <button class="purple" onclick="spinRoulette('number')">🎯 Число</button>
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:12px; opacity:0.5;">
+            Красное/Чёрное = x2, Число = x35
+        </div>
+    </div>
+    
+    <div class="footer">
+        Сделано с ❤️ в Telegram Mini App
+    </div>
+</div>
+
+<script>
+    // ================================================
+    // ===== БАЛАНС (сохраняется в телефоне) =====
+    // ================================================
+    let balance = parseInt(localStorage.getItem('casinoBalance')) || 1000;
+    updateBalanceDisplay();
+    
+    function updateBalanceDisplay() {
+        document.getElementById('balanceDisplay').textContent = balance;
+        localStorage.setItem('casinoBalance', balance);
+    }
+    
+    function changeBalance(amount) {
+        balance += amount;
+        updateBalanceDisplay();
+        return balance;
+    }
+    
+    function showToast(message, isWin = true) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.borderColor = isWin ? 'rgba(46,204,113,0.5)' : 'rgba(231,76,60,0.5)';
+        toast.classList.add('show');
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+    
+    // ================================================
+    // ===== МОНЕТКА =====
+    // ================================================
+    function tossCoin() {
+        const bet = 10;
+        if (balance < bet) {
+            showToast('❌ Недостаточно монет!', false);
+            return;
+        }
+        
+        changeBalance(-bet);
+        const result = Math.random() < 0.5 ? 'Орёл 🦅' : 'Решка 🪙';
+        const isWin = (result === 'Орёл 🦅');
+        
+        // Анимация
+        const el = document.getElementById('coinResult');
+        el.classList.remove('coin-flip');
+        void el.offsetWidth;
+        el.classList.add('coin-flip');
+        
+        setTimeout(() => {
+            el.textContent = result;
+            if (isWin) {
+                const win = bet * 2;
+                changeBalance(win);
+                showToast(`🎉 Выиграл ${win} монет!`, true);
+            } else {
+                showToast(`😢 Проиграл ${bet} монет`, false);
+            }
+        }, 300);
+    }
+    
+    // ================================================
+    // ===== БЛЭКДЖЕК (21) =====
+    // ================================================
+    let deck = [];
+    let playerCards = [];
+    let dealerCards = [];
+    let bjBet = 50;
+    let bjActive = false;
+    
+    function createDeck() {
+        const suits = ['♠','♥','♦','♣'];
+        const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+        let d = [];
+        for (let s of suits) for (let v of values) d.push(v+s);
+        return d;
+    }
+    
+    function shuffleDeck(d) {
+        for (let i = d.length-1; i>0; i--) {
+            let j = Math.floor(Math.random()*(i+1));
+            [d[i], d[j]] = [d[j], d[i]];
+        }
+        return d;
+    }
+    
+    function cardValue(card) {
+        let v = card.slice(0, -1);
+        if (v === 'A') return 11;
+        if (['J','Q','K'].includes(v)) return 10;
+        return parseInt(v);
+    }
+    
+    function countPoints(hand) {
+        let total = hand.reduce((sum, c) => sum + cardValue(c), 0);
+        let aces = hand.filter(c => c[0] === 'A').length;
+        while (total > 21 && aces > 0) { total -= 10; aces--; }
+        return total;
+    }
+    
+    function renderBJ() {
+        const p = playerCards.length ? playerCards.join(' ') : '—';
+        const d = dealerCards.length ? dealerCards.join(' ') : '—';
+        const pPoints = playerCards.length ? countPoints(playerCards) : 0;
+        const dPoints = dealerCards.length ? countPoints(dealerCards) : 0;
+        document.getElementById('bjResult').innerHTML = 
+            `👤 Ты: ${p} (${pPoints})<br>🤖 Дилер: ${d} (${dPoints})`;
+    }
+    
+    function startBlackjack() {
+        if (balance < bjBet) {
+            showToast('❌ Недостаточно монет!', false);
+            return;
+        }
+        
+        bjActive = true;
+        changeBalance(-bjBet);
+        deck = shuffleDeck(createDeck());
+        playerCards = [deck.pop(), deck.pop()];
+        dealerCards = [deck.pop(), deck.pop()];
+        renderBJ();
+        
+        if (countPoints(playerCards) === 21) {
+            setTimeout(() => {
+                const win = Math.floor(bjBet * 1.5);
+                changeBalance(win);
+                showToast(`🎉 Блэкджек! Выиграл ${win} монет!`, true);
+                bjActive = false;
+            }, 300);
+        }
+    }
+    
+    function hitCard() {
+        if (!bjActive || playerCards.length === 0) {
+            showToast('Начни новую игру!', false);
+            return;
+        }
+        playerCards.push(deck.pop());
+        renderBJ();
+        const points = countPoints(playerCards);
+        if (points > 21) {
+            showToast(`💥 Перебор! Проиграл ${bjBet} монет`, false);
+            bjActive = false;
+        }
+    }
+    
+    function standCard() {
+        if (!bjActive || playerCards.length === 0) {
+            showToast('Начни новую игру!', false);
+            return;
+        }
+        
+        while (countPoints(dealerCards) < 17) dealerCards.push(deck.pop());
+        const p = countPoints(playerCards);
+        const d = countPoints(dealerCards);
+        renderBJ();
+        
+        if (d > 21 || p > d) {
+            const win = bjBet * 2;
+            changeBalance(win);
+            showToast(`🎉 Выиграл ${win} монет!`, true);
+        } else if (p === d) {
+            changeBalance(bjBet);
+            showToast(`🤝 Ничья! Возврат ставки`, false);
+        } else {
+            showToast(`😢 Проиграл ${bjBet} монет`, false);
+        }
+        bjActive = false;
+    }
+    
+    // ================================================
+    // ===== РУЛЕТКА =====
+    // ================================================
+    function spinRoulette(betType) {
+        const bet = parseInt(document.getElementById('rouletteBet').value) || 50;
+        if (balance < bet) {
+            showToast('❌ Недостаточно монет!', false);
+            return;
+        }
+        
+        changeBalance(-bet);
+        const num = Math.floor(Math.random() * 37);
+        const color = num === 0 ? 'зелёный' : (num % 2 === 0 ? 'красный' : 'чёрный');
+        
+        let isWin = false;
+        let winAmount = 0;
+        
+        if (betType === 'red' && color === 'красный') { isWin = true; winAmount = bet * 2; }
+        else if (betType === 'black' && color === 'чёрный') { isWin = true; winAmount = bet * 2; }
+        else if (betType === 'number') {
+            const guess = prompt('Введи число от 0 до 36:', '7');
+            if (guess !== null && parseInt(guess) === num) {
+                isWin = true;
+                winAmount = bet * 35;
+            }
+        }
+        
+        const resultText = `🎲 ${num} (${color})`;
+        document.getElementById('rouletteResult').textContent = resultText;
+        
+        if (isWin) {
+            changeBalance(winAmount);
+            showToast(`🎉 Выиграл ${winAmount} монет!`, true);
+        } else {
+            showToast(`😢 Проиграл ${bet} монет`, false);
+        }
+    }
+    
+    // ================================================
+    // ===== ИНИЦИАЛИЗАЦИЯ =====
+    // ================================================
+    console.log('🎰 Казино загружено! Баланс:', balance);
+    
+    if (balance === 1000) {
+        setTimeout(() => {
+            showToast('💰 Добро пожаловать! У тебя 1000 монет', true);
+        }, 500);
+    }
+</script>
+</body>
+</html>
